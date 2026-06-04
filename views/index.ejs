@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#f8f9fa] text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hanami HoHo - Premium Manga Reader Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800 bg-[#f8f9fa] antialiased selection:bg-rose-500 selection:text-white">
+
+  <!-- Floating Micro-Toast Notification -->
+  <div id="toast-wrapper" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Minimalist Light Top Bar (Header) -->
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200/80 h-14 w-full flex items-center justify-between px-4 shadow-sm">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+      
+      <!-- Brand Logo / Text -->
+      <a href="/" class="flex items-center gap-1.5 focus:outline-none">
+        <span class="text-sm font-black tracking-wider text-slate-900 font-sans uppercase">HANAMI <span class="text-rose-500">HOHO</span></span>
+      </a>
+
+      <!-- Compact Search Field -->
+      <div class="relative w-44 sm:w-64">
+        <input 
+          id="search-input"
+          type="text" 
+          placeholder="Search manga..." 
+          oninput="handleSearch(this.value)"
+          class="w-full bg-slate-100 rounded-full text-xs px-4 py-1.5 border-none focus:outline-none focus:ring-1 focus:ring-slate-300 text-slate-800 placeholder-slate-400"
+        />
+      </div>
+
+      <!-- Interactive Dropdown Menu Container -->
+      <div class="flex items-center relative" id="menu-container">
+        <button id="menu-button" class="text-slate-500 hover:text-slate-900 focus:outline-none p-1 transition" title="Menu Options">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        
+        <!-- Premium Webtoon-Style Dropdown Panel -->
+        <div id="nav-dropdown" class="absolute right-0 top-10 z-50 w-52 bg-white rounded-xl shadow-xl border border-slate-200/90 p-3 hidden transition-all duration-200 select-none animate-fade-in">
+          <!-- Popular Tags Subsection -->
+          <div class="mb-3">
+            <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest px-2 mb-1.5 flex items-center gap-1">
+              <span>🏷️</span> Popular Tags
+            </div>
+            <div class="grid grid-cols-2 gap-1 px-1">
+              <button onclick="filterByTag('Manga')" class="text-left text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-50 px-2 py-1 rounded transition">Manga</button>
+              <button onclick="filterByTag('Artist CG')" class="text-left text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-50 px-2 py-1 rounded transition">Artist CG</button>
+              <button onclick="filterByTag('Doujinshi')" class="text-left text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-50 px-2 py-1 rounded transition">Doujinshi</button>
+              <button onclick="filterByTag('Sci-Fi')" class="text-left text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-50 px-2 py-1 rounded transition">Sci-Fi</button>
+            </div>
+          </div>
+          
+          <div class="border-t border-slate-100 my-2"></div>
+          
+          <!-- Row options -->
+          <div class="space-y-1">
+            <!-- Weekly Releases Schedule Trigger -->
+            <button onclick="showWeeklyReleasesSchedule()" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-slate-50 transition text-left">
+              <span class="text-sm">📅</span>
+              <span class="truncate">Weekly Releases</span>
+            </button>
+
+            <!-- My Bookmarks -->
+            <button onclick="showBookmarks()" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-slate-50 transition text-left">
+              <span class="text-sm">⭐</span>
+              <span class="truncate">My Bookmarks</span>
+            </button>
+
+            <!-- Refresh Catalog -->
+            <button onclick="refreshLibrary()" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-rose-600 hover:bg-slate-50 transition text-left">
+              <span class="text-sm">🔄</span>
+              <span class="truncate">Refresh Catalog</span>
+            </button>
+
+            <div class="border-t border-slate-100 my-1.5"></div>
+
+            <!-- hoho API Admin Panel trigger -->
+            <button onclick="openAdminModal(); closeDropdown();" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-slate-50 transition text-left font-mono uppercase tracking-wider text-[10px]">
+              <span class="text-sm">🔑</span>
+              <span class="truncate">hoho API Panel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Backwards compatible hidden spotlight tags so the script reference never fails -->
+    <div class="hidden">
+      <section id="hero-section">
+        <img id="hero-bg" src="" />
+        <span id="hero-title"></span>
+        <span id="hero-category"></span>
+        <span id="hero-posted"></span>
+        <span id="hero-rating"></span>
+        <a id="hero-read-link" href="#"></a>
+      </section>
+    </div>
+
+    <!-- Content Catalog Section -->
+    <section class="relative z-10">
+      <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-200/80">
+        <div class="flex items-center gap-2">
+          <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+          <h3 id="section-title-tag" class="text-sm font-bold text-slate-900 tracking-tight font-sans uppercase">Hot & Trending Releases</h3>
+        </div>
+        <span id="status-tag" class="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200/80 py-1 px-3 rounded-full uppercase tracking-wider">
+          Weekly Top Pick
+        </span>
+      </div>
+
+      <!-- Spinner Loader State -->
+      <div id="loader-view" class="py-24 text-center">
+        <div class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-rose-500 border-r-transparent align-[-0.125em]" role="status"></div>
+        <p class="mt-4 text-[11px] text-slate-400 font-mono tracking-wider">Synchronizing digital catalog archives...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-view" class="py-24 text-center hidden">
+        <p class="text-xs text-slate-500 font-mono">No matching releases found in database index.</p>
+      </div>
+
+      <!-- Subtle Loader State (Over existing grid/page) -->
+      <div id="subtle-loader-view" class="fixed bottom-6 right-6 bg-slate-900/90 text-white text-[11px] px-4 py-2.5 rounded-full font-mono shadow-xl flex items-center gap-2 z-50 transition-opacity duration-300 pointer-events-none hidden">
+        <div class="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-rose-500"></div>
+        <span>Scraping index archives...</span>
+      </div>
+
+      <!-- Perfectly disciplined Content Catalog Grid -->
+      <div id="grid-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 p-4">
+        <!-- Dyn Cards Injected via renderGrid() -->
+      </div>
+
+      <!-- Dynamic Pagination Layout -->
+      <div id="scrapers-pagination" class="mt-12 flex items-center justify-between border-t border-slate-200/80 pt-6 hidden">
+        <button 
+          id="prev-page-btn"
+          onclick="navigatePage(-1)"
+          class="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs tracking-wider transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+        >
+          ← Prev
+        </button>
+        <span class="text-xs font-semibold text-slate-500 select-none">
+          Page <span id="current-scr-page-lbl" class="text-rose-600 font-bold bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/80">1</span>
+        </span>
+        <button 
+          id="next-page-btn"
+          onclick="navigatePage(1)"
+          class="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-xs tracking-wider transition-colors duration-200 cursor-pointer shadow-sm"
+        >
+          Next →
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Footer -->
+  <footer class="border-t border-slate-200/85 bg-white py-12 mt-20 text-center text-xs select-none relative z-10 text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="font-sans font-extrabold text-slate-900 tracking-wide text-sm">
+        Hanami <span class="text-rose-500">HoHo</span> Portal
+      </p>
+      <p class="mt-3 text-[11px] text-slate-400 leading-relaxed max-w-md mx-auto">
+        Hanami HoHo is a modern high-definition web reader designed for manga, artbooks, and graphic novels. Experience fast buffering, seamless reading mode controls, and elegant catalogs.
+      </p>
+      <div class="mt-6 text-[10px] text-slate-450 flex flex-wrap items-center justify-center gap-2.5">
+        <span>© 2026 Hanami HoHo Group Ltd. All rights registered.</span>
+        <span>•</span>
+        <button 
+          onclick="openAdminModal()"
+          class="text-slate-400 hover:text-rose-600 font-mono transition uppercase tracking-wider text-[9px] cursor-pointer"
+        >
+          hoho API Panel
+        </button>
+        <span>•</span>
+        <a 
+          href="/api/backup/zip" 
+          class="text-slate-400 hover:text-rose-600 font-mono transition uppercase tracking-wider text-[9px] flex items-center gap-1"
+          title="Download the full code backup ZIP with all components and server"
+        >
+          📄 Backup Bundle (.zip)
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Admin Modal View (Light Cozy Glass UI Pattern) -->
+  <div id="admin-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden select-none transition-all duration-300">
+    
+    <!-- Passcode Verification -->
+    <div id="admin-auth-card" class="w-full max-w-sm rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl relative transform scale-100 transition-all text-slate-800">
+      <h3 class="text-sm font-black text-center text-slate-900 uppercase tracking-wider font-sans">Admin Verification</h3>
+      <p class="text-slate-500 text-[11px] text-center mt-1.5 leading-relaxed">
+        Input passcode to unlock custom archive upload pipeline.
+      </p>
+      
+      <div class="mt-5 space-y-4">
+        <div id="auth-error" class="hidden text-center text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 py-1.5 px-3 rounded-lg">
+          Invalid Passcode. Access Denied.
+        </div>
+         <input 
+           id="auth-password"
+           type="password"
+           placeholder="Access Code"
+           class="w-full h-11 px-4 text-center rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm tracking-widest outline-none focus:border-rose-500 transition-colors"
+         />
+        <div class="flex gap-3 mt-2">
+          <button 
+            type="button" 
+            onclick="closeAdminModal()"
+            class="flex-1 h-10 border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            onclick="verifyAdminPasscode()"
+            class="flex-1 h-10 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+          >
+            Verify
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin ZIP Upload Panel (Light Clean UI Pattern) -->
+    <div id="admin-upload-card" class="w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl relative transform scale-100 transition-all text-slate-800 hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-5">
+        <h3 class="text-xs font-black uppercase text-slate-905 tracking-widest">Upload local archive</h3>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer text-lg font-bold">×</button>
+      </div>
+
+      <form id="upload-manga-form" onsubmit="handleMangaUploadSubmit(event)" class="space-y-4">
+        
+        <div id="upload-feedback" class="hidden text-xs py-2 px-3 rounded-lg border">
+          <!-- Dyn Message -->
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Manga Title</label>
+            <input 
+              id="form-title"
+              type="text" 
+              required
+              placeholder="e.g. Naruto, Bleach" 
+              class="w-full h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 focus:border-rose-500 text-xs text-slate-800 outline-none transition"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Chapter number</label>
+            <input 
+              id="form-chapter"
+              type="text" 
+              required
+              placeholder="e.g. 101, 25.5" 
+              class="w-full h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 focus:border-rose-500 text-xs text-slate-800 outline-none transition"
+            />
+          </div>
+        </div>
+
+        <!-- Optional Cover Field -->
+        <div class="space-y-1">
+          <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Manga Cover Art (Optional)</label>
+          <input 
+            id="form-cover"
+            type="file" 
+            accept="image/*"
+            class="w-full h-10 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 outline-none file:mr-3 file:py-0.5 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 file:font-semibold"
+          />
+        </div>
+
+        <!-- ZIP Archival File Input Drag Box -->
+        <div class="space-y-1">
+          <label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-500">Chapter Pages ZIP Archive</label>
+          <div 
+            id="drag-area"
+            onclick="document.getElementById('form-zip').click()"
+            class="border border-dashed border-slate-200 hover:border-rose-500 bg-slate-50 rounded-xl p-5 text-center cursor-pointer transition"
+          >
+            <input 
+              id="form-zip"
+              type="file" 
+              required
+              accept=".zip"
+              onchange="handleZipFileChange(this)"
+              class="hidden"
+            />
+            <p id="drag-text-primary" class="text-xs font-semibold text-slate-500">Drag & Drop .zip Archive Here</p>
+            <p id="drag-text-secondary" class="text-[10px] font-mono text-slate-400 mt-1">or click to select file from disk</p>
+          </div>
+        </div>
+
+        <div class="flex gap-4 pt-3">
+          <button 
+            type="button" 
+            onclick="resetFormState()"
+            class="flex-1 h-10 border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Clear Fields
+          </button>
+          <button 
+            id="form-submit-btn"
+            type="submit" 
+            class="flex-1 h-10 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            Upload & Compile
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Client-Side API Orchestration -->
+  <script>
+    let activeQuery = "";
+    let mangaCollection = [];
+    let currentPage = 1; // 1-indexed for scraper pagination
+
+    // Backward-forward routing
+    function navigatePage(direction) {
+      if (direction === -1 && currentPage <= 1) return;
+
+      currentPage += direction;
+      document.getElementById("current-scr-page-lbl").innerText = currentPage;
+      
+      const searchInput = document.getElementById("search-input");
+      if (activeQuery) {
+        searchInput.placeholder = `Searching library page ${currentPage}...`;
+      } else {
+        searchInput.placeholder = `Browse library (Page ${currentPage})...`;
+      }
+      
+      loadMangaCollection();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Async Fetch function to populate catalog
+    async function loadMangaCollection() {
+      const loader = document.getElementById("loader-view");
+      const subtleLoader = document.getElementById("subtle-loader-view");
+      const emptyView = document.getElementById("empty-view");
+      const grid = document.getElementById("grid-container");
+      const pagSection = document.getElementById("scrapers-pagination");
+
+      // Check if cache exists for this page and query
+      const cacheKey = "hn_manga_cache_" + currentPage + "_" + encodeURIComponent(activeQuery || "");
+      let cachedList = [];
+      try {
+        const stored = localStorage.getItem(cacheKey);
+        if (stored) {
+          cachedList = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn("[CACHE] Error parsing cached manga entries:", e);
+      }
+
+      const hasCache = cachedList && cachedList.length > 0;
+      const hasCurrentContent = grid.children.length > 0;
+
+      // 1. Never clear the list before new data arrives. Keep showing what is currently on the screen.
+      if (hasCache) {
+        mangaCollection = cachedList;
+        renderGrid(mangaCollection);
+        if (!activeQuery && currentPage === 1 && mangaCollection[0]) {
+          updateSpotlightHero(mangaCollection[0]);
+        }
+        loader.classList.add("hidden");
+        if (subtleLoader) subtleLoader.classList.add("hidden");
+        emptyView.classList.add("hidden");
+        pagSection.classList.remove("hidden");
+      } else if (hasCurrentContent) {
+        // We have current content (e.g. from transition or previous page). Keep showing it!
+        // Hide the big central spinner because we have something else visually occupying the screen.
+        loader.classList.add("hidden");
+        emptyView.classList.add("hidden");
+        pagSection.classList.remove("hidden");
+        
+        // Show subtle floating loader
+        if (subtleLoader) {
+          subtleLoader.classList.remove("hidden");
+        }
+      } else {
+        // No cache and no current content -> Show full-screen loader
+        loader.classList.remove("hidden");
+        if (subtleLoader) subtleLoader.classList.add("hidden");
+        emptyView.classList.add("hidden");
+        grid.innerHTML = "";
+        pagSection.classList.add("hidden");
+      }
+
+      document.getElementById("current-scr-page-lbl").innerText = currentPage;
+      document.getElementById("prev-page-btn").disabled = currentPage <= 1;
+
+      let completed = false;
+      const timeoutId = setTimeout(() => {
+        if (!completed) {
+          completed = true;
+          console.warn("[TIMEOUT] EJS client-side feed fetch hung.");
+          loader.classList.add("hidden");
+          if (subtleLoader) subtleLoader.classList.add("hidden");
+          
+          if (!hasCache && !hasCurrentContent) {
+            mangaCollection = [];
+            grid.innerHTML = "";
+            renderGrid([]);
+            emptyView.classList.remove("hidden");
+            pagSection.classList.add("hidden");
+          }
+        }
+      }, 15000);
+
+      try {
+        const url = `/api/manga/feed?page=${currentPage - 1}&search=${encodeURIComponent(activeQuery)}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Connection failed.");
+        const payload = await response.json();
+
+        if (completed) return; // Prevent race conditions
+        completed = true;
+        clearTimeout(timeoutId);
+
+        if (payload.success && payload.galleries && payload.galleries.length > 0) {
+          mangaCollection = payload.galleries;
+          
+          // Save to persistent localStorage cache
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(mangaCollection));
+          } catch (e) {
+            console.error("[CACHE] Failed to save manga list to localStorage:", e);
+          }
+
+          // Hydrate status tag with premium label
+          const tag = document.getElementById("status-tag");
+          if (tag) {
+            tag.innerText = `Weekly Top Pick`;
+            tag.className = "text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200/80 py-1 px-3 rounded-full uppercase tracking-wider";
+          }
+
+          // Render Grid
+          renderGrid(mangaCollection);
+
+          // Update Top Hero Spotlight dynamically if search is empty and on page 1
+          if (!activeQuery && currentPage === 1) {
+            updateSpotlightHero(mangaCollection[0]);
+          }
+
+          // Render pagination only if source is NOT fallback
+          if (payload.source === "fallback") {
+            pagSection.classList.add("hidden");
+          } else {
+            pagSection.classList.remove("hidden");
+          }
+          emptyView.classList.add("hidden");
+        } else {
+          // If fetch completed successfully but returned 0 results:
+          mangaCollection = [];
+          grid.innerHTML = "";
+          emptyView.classList.remove("hidden");
+          pagSection.classList.add("hidden");
+        }
+      } catch (err) {
+        console.error(err);
+        if (!completed) {
+          completed = true;
+          clearTimeout(timeoutId);
+        }
+        // If query failed/timed out, reuse current or cached views. Don't throw a blank screen unless completely uninitialized.
+        if (!hasCache && !hasCurrentContent) {
+          mangaCollection = [];
+          grid.innerHTML = "";
+          emptyView.classList.remove("hidden");
+          pagSection.classList.add("hidden");
+        }
+      } finally {
+        if (!completed) {
+          completed = true;
+          clearTimeout(timeoutId);
+        }
+        loader.classList.add("hidden");
+        if (subtleLoader) {
+          subtleLoader.classList.add("hidden");
+        }
+      }
+    }
+
+    // Design-conforming visual badges with no neon borders / clean visual styles
+    function getGenreStyling(category) {
+      const cat = (category || "").toLowerCase();
+      if (cat.includes("manga")) {
+        return {
+          tag: "bg-rose-50 border-rose-200/60 text-rose-600 hover:bg-rose-100"
+        };
+      } else if (cat.includes("doujinshi") || cat.includes("hentai")) {
+        return {
+          tag: "bg-purple-50 border-purple-200/60 text-purple-600 hover:bg-purple-100"
+        };
+      } else if (cat.includes("cg") || cat.includes("artist")) {
+        return {
+          tag: "bg-pink-50 border-pink-200/60 text-pink-600 hover:bg-pink-100"
+        };
+      } else {
+        return {
+          tag: "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
+        };
+      }
+    }
+
+    function renderGrid(list) {
+      const grid = document.getElementById("grid-container");
+      grid.innerHTML = "";
+
+      const bookmarks = JSON.parse(localStorage.getItem('hn_bookmarks') || '[]');
+
+      // Display all items in the grid since hero section is now clean and hidden
+      const visibleList = list;
+
+      visibleList.forEach((m, idx) => {
+        const isBookmarked = bookmarks.some(b => b.id === m.id);
+        const dispPosted = (m.posted === 'Live Scraped' || m.posted === 'Recently Scraped' || !m.posted) ? 'Just Updated' : m.posted;
+        const dispUploader = (m.uploader && (m.uploader.includes('Admin') || m.uploader.includes('Team') || m.uploader.includes('HoHo') || m.uploader.includes('Local'))) ? 'Premium' : 'Featured';
+        
+        // Sanitize category / scraper source labels to ensure raw domain/scraper names are hidden
+        const cleanCategory = (function(cat) {
+          if (!cat) return "Manga";
+          const lower = cat.toLowerCase();
+          if (lower.includes("hentai") || lower.includes("fox") || lower.includes("doujin") || lower.includes("nexus") || lower.includes("scraped") || lower.includes("local") || lower.includes("gallery") || lower.includes("download") || lower.includes(".") || lower.includes("/")) {
+            return "Manga";
+          }
+          return cat;
+        })(m.category);
+
+        const card = document.createElement("a");
+        card.href = "/manga/" + m.id;
+        
+        // Exact specifications for hover interaction
+        card.className = "group block relative bg-white border border-slate-200/60 rounded-xl p-2 shadow-sm transition-transform duration-250 ease-out hover:-translate-y-0.5 text-left";
+        
+        card.innerHTML = `
+          <div class="relative overflow-hidden aspect-[2/3] rounded-lg bg-slate-50">
+            <img 
+              src="${m.cover}" 
+              alt="${m.title}" 
+              loading="lazy"
+              class="w-full h-full object-cover rounded-md border border-slate-200/50"
+            />
+            <button 
+              onclick="toggleBookmark(event, '${m.id}', '${m.title.replace(/'/g, "\\'").replace(/"/g, '\\"')}', '${m.cover}', '${m.category}', '${m.rating}')"
+              class="absolute top-2 right-2 p-1.5 rounded-full bg-white/95 text-slate-400 hover:text-rose-500 hover:scale-110 shadow-md transition-all duration-200 z-10 focus:outline-none focus:ring-0"
+              title="${isBookmarked ? 'Remove Bookmark' : 'Add Bookmark'}"
+            >
+              <svg class="w-3.5 h-3.5 ${isBookmarked ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+            </button>
+          </div>
+          <div class="px-1 pt-2.5 pb-1">
+            <div class="flex items-start gap-1.5">
+              <span class="text-2xl font-black text-slate-800/80 tracking-tighter shrink-0 select-none leading-none pt-0.5">${idx + 1}</span>
+              <div class="flex-1 min-w-0">
+                <h4 class="text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors duration-200 line-clamp-2 h-8 leading-snug font-sans" title="${m.title}">${m.title}</h4>
+                <div class="text-[10px] text-slate-500 mt-1 font-medium truncate">
+                  ${cleanCategory} • ⭐ ${m.rating}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function updateSpotlightHero(m) {
+      if (!m) return;
+      document.getElementById("hero-section").style.display = "block";
+      document.getElementById("hero-bg").src = m.cover;
+      document.getElementById("hero-title").innerText = m.title;
+      
+      const cleanCategory = (function(cat) {
+        if (!cat) return "Manga";
+        const lower = cat.toLowerCase();
+        if (lower.includes("hentai") || lower.includes("fox") || lower.includes("doujin") || lower.includes("nexus") || lower.includes("scraped") || lower.includes("local") || lower.includes("gallery") || lower.includes("download") || lower.includes(".") || lower.includes("/")) {
+          return "Manga";
+        }
+        return cat;
+      })(m.category);
+      document.getElementById("hero-category").innerText = cleanCategory;
+      
+      const dispUploader = (m.uploader && (m.uploader.includes('Admin') || m.uploader.includes('Team') || m.uploader.includes('HoHo') || m.uploader.includes('Local'))) ? 'Premium Edition' : 'Featured Edition';
+      document.getElementById("hero-posted").innerText = "Edition: " + dispUploader;
+      document.getElementById("hero-rating").innerText = "⭐ " + m.rating;
+      document.getElementById("hero-read-link").href = "/manga/" + m.id;
+    }
+
+    // Debounce Search input to prevent network overloads
+    let searchTimeout;
+    function handleSearch(q) {
+      activeQuery = q.trim();
+      
+      // Update section header to denote search queries natively
+      const sectionHeader = document.getElementById("section-title-tag");
+      if (activeQuery) {
+        sectionHeader.innerText = `Search results for "${activeQuery}"`;
+      } else {
+        sectionHeader.innerText = "Hot & Trending Releases";
+      }
+
+      // Hide hero slider during search queries
+      const hero = document.getElementById("hero-section");
+      if (activeQuery) {
+        hero.style.display = "none";
+      } else {
+        if (currentPage === 1) {
+          hero.style.display = "block";
+        }
+      }
+
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadMangaCollection();
+      }, 400);
+    }
+
+    // Modal Control orchestrators
+    function openAdminModal() {
+      const modal = document.getElementById("admin-modal");
+      modal.classList.remove("hidden");
+      document.getElementById("auth-password").value = "";
+      document.getElementById("auth-error").classList.add("hidden");
+      
+      // Reset view modes
+      document.getElementById("admin-auth-card").classList.remove("hidden");
+      document.getElementById("admin-upload-card").classList.add("hidden");
+    }
+
+    // Closes global admin overlay
+    function closeAdminModal() {
+      document.getElementById("admin-modal").classList.add("hidden");
+    }
+
+    function verifyAdminPasscode() {
+      const code = document.getElementById("auth-password").value;
+      if (code === "9221") {
+        document.getElementById("admin-auth-card").classList.add("hidden");
+        document.getElementById("admin-upload-card").classList.remove("hidden");
+      } else {
+        document.getElementById("auth-error").classList.remove("hidden");
+      }
+    }
+
+    // Drag-And-Drop / File selection triggers
+    function handleZipFileChange(input) {
+      const dragArea = document.getElementById("drag-area");
+      const pText = document.getElementById("drag-text-primary");
+      const sText = document.getElementById("drag-text-secondary");
+
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        pText.innerText = "✓ Checked: " + file.name;
+        pText.className = "text-xs font-bold text-emerald-600";
+        sText.innerText = "(" + (file.size / (1024 * 1024)).toFixed(2) + " MB archive ready)";
+        dragArea.className = "border border-solid border-emerald-500 bg-emerald-50/50 rounded-xl p-5 text-center cursor-pointer transition";
+      }
+    }
+
+    function resetFormState() {
+      document.getElementById("form-title").value = "";
+      document.getElementById("form-chapter").value = "";
+      document.getElementById("form-cover").value = "";
+      document.getElementById("form-zip").value = "";
+      
+      const dragArea = document.getElementById("drag-area");
+      document.getElementById("drag-text-primary").innerText = "Drag & Drop .zip Archive Here";
+      document.getElementById("drag-text-primary").className = "text-xs font-semibold text-slate-500";
+      document.getElementById("drag-text-secondary").innerText = "or click to select file from disk";
+      dragArea.className = "border border-dashed border-slate-200 hover:border-rose-500 bg-slate-50 rounded-xl p-5 text-center cursor-pointer transition";
+      
+      const fb = document.getElementById("upload-feedback");
+      fb.classList.add("hidden");
+    }
+
+    async function handleMangaUploadSubmit(e) {
+      e.preventDefault();
+      
+      const password = "9221"; // Server verified passcode
+      const title = document.getElementById("form-title").value;
+      const chapter = document.getElementById("form-chapter").value;
+      const cover = document.getElementById("form-cover").files[0];
+      const zipFile = document.getElementById("form-zip").files[0];
+
+      const fb = document.getElementById("upload-feedback");
+      const submitBtn = document.getElementById("form-submit-btn");
+
+      fb.classList.remove("hidden");
+      fb.innerText = "Extracting, analyzing and indexing archive...";
+      fb.className = "text-xs py-2 px-3 rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-600 font-medium";
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Compiling Archive...";
+
+      const formData = new FormData();
+      formData.append("password", password);
+      formData.append("title", title);
+      formData.append("chapter", chapter);
+      if (cover) formData.append("cover", cover);
+      formData.append("zipFile", zipFile);
+
+      try {
+        const res = await fetch("/api/secret/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          fb.innerText = "✓ Expansion successfully finalized! Manga chapter compiled: " + data.title;
+          fb.className = "text-xs py-2 px-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 font-bold";
+          
+          setTimeout(() => {
+            closeAdminModal();
+            resetFormState();
+            loadMangaCollection();
+          }, 1800);
+        } else {
+          fb.innerText = "Error: " + (data.error || "Internal compression process failed.");
+          fb.className = "text-xs py-2 px-3 rounded-lg border border-red-200 bg-red-50 text-red-600 font-bold";
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Upload & Compile";
+        }
+      } catch (err) {
+        fb.innerText = "Pipeline failure: server timeout or memory limits breached.";
+        fb.className = "text-xs py-2 px-3 rounded-lg border border-red-200 bg-red-50 text-red-600 font-bold";
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Upload & Compile";
+      }
+    }
+
+    // Floating Micro-Toast component builder
+    function showToast(message) {
+      const wrapper = document.getElementById("toast-wrapper");
+      if (!wrapper) return;
+      
+      const toast = document.createElement("div");
+      toast.className = "bg-slate-900/95 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl border border-slate-800 flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-4 opacity-0";
+      toast.innerHTML = `
+        <span class="text-rose-500 font-sans">&#x2728;</span>
+        <span>${message}</span>
+      `;
+      
+      wrapper.appendChild(toast);
+      
+      // Trigger entrance transition
+      setTimeout(() => {
+        toast.classList.remove("translate-y-4", "opacity-0");
+      }, 50);
+      
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.add("translate-y-4", "opacity-0");
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }, 3200);
+    }
+
+    // Toggle Bookmark persistence
+    function toggleBookmark(event, id, title, cover, category, rating) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
+      let bookmarks = JSON.parse(localStorage.getItem('hn_bookmarks') || '[]');
+      const index = bookmarks.findIndex(b => b.id === id);
+      
+      if (index > -1) {
+        bookmarks.splice(index, 1);
+        showToast(`Removed from Bookmarks: ${title}`);
+      } else {
+        bookmarks.push({ id, title, cover, category, rating });
+        showToast(`Bookmarked: ${title}`);
+      }
+      
+      localStorage.setItem('hn_bookmarks', JSON.stringify(bookmarks));
+      
+      // Dynamic feed filter re-render
+      if (window.showingBookmarksOnly) {
+        showBookmarks();
+      } else {
+        renderGrid(mangaCollection);
+      }
+    }
+
+    // Dropdown Action Controllers
+    function filterByTag(tag) {
+      const searchInput = document.getElementById("search-input");
+      if (searchInput) {
+        searchInput.value = tag;
+        handleSearch(tag);
+      }
+      closeDropdown();
+    }
+
+    function showWeeklyReleasesSchedule() {
+      showToast("📅 Digital catalog releases synced automatically every Monday & Thursday!");
+      closeDropdown();
+    }
+
+    function refreshLibrary() {
+      loadMangaCollection();
+      showToast("🔄 Re-synchronized latest content library indices!");
+      closeDropdown();
+    }
+
+    // Bookmarked filter view toggle
+    function showBookmarks() {
+      window.showingBookmarksOnly = true;
+      const bookmarks = JSON.parse(localStorage.getItem('hn_bookmarks') || '[]');
+      
+      const sectionHeader = document.getElementById("section-title-tag");
+      sectionHeader.innerHTML = `⭐ My Bookmarked Comics <span class="ml-2 font-mono text-[10px] bg-rose-50 text-rose-600 border border-rose-200/60 px-2 py-0.5 rounded-full">${bookmarks.length} saved</span>`;
+      
+      // Hide pagination for bookmark search view
+      document.getElementById("scrapers-pagination").classList.add("hidden");
+      
+      const grid = document.getElementById("grid-container");
+      grid.innerHTML = "";
+      
+      const loader = document.getElementById("loader-view");
+      const emptyView = document.getElementById("empty-view");
+      
+      loader.classList.add("hidden");
+      
+      if (bookmarks.length === 0) {
+        emptyView.classList.remove("hidden");
+        emptyView.innerHTML = `
+          <div class="py-12 bg-white rounded-xl border border-slate-150 p-6 text-center max-w-sm mx-auto shadow-sm">
+            <span class="text-3xl">⭐</span>
+            <p class="text-xs text-slate-500 font-bold mt-2">No bookmarks saved yet</p>
+            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Click the bookmark icon on any manga card to save your favorite updates here!</p>
+            <button onclick="clearBookmarksFilter()" class="mt-4 px-4 py-2 text-[10px] font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg transition-colors cursor-pointer">Browse Releases</button>
+          </div>
+        `;
+      } else {
+        emptyView.classList.add("hidden");
+        renderGrid(bookmarks);
+      }
+      
+      closeDropdown();
+    }
+
+    function clearBookmarksFilter() {
+      window.showingBookmarksOnly = false;
+      const sectionHeader = document.getElementById("section-title-tag");
+      sectionHeader.innerText = "Hot & Trending Releases";
+      document.getElementById("search-input").value = "";
+      activeQuery = "";
+      currentPage = 1;
+      loadMangaCollection();
+    }
+
+    // Dropdown toggles & Outside Click Events
+    const menuButton = document.getElementById("menu-button");
+    const navDropdown = document.getElementById("nav-dropdown");
+    const menuContainer = document.getElementById("menu-container");
+
+    if (menuButton && navDropdown) {
+      menuButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navDropdown.classList.toggle("hidden");
+      });
+      
+      window.closeDropdown = function() {
+        if (navDropdown) {
+          navDropdown.classList.add("hidden");
+        }
+      };
+      
+      document.addEventListener("click", (e) => {
+        if (menuContainer && !menuContainer.contains(e.target)) {
+          closeDropdown();
+        }
+      });
+    }
+
+    // Bootstrap loading sequence
+    document.addEventListener("DOMContentLoaded", function() {
+      loadMangaCollection();
+    });
+
+    // Back-navigation / BFCache safety restorer
+    window.addEventListener("pageshow", function(event) {
+      if (event.persisted || !mangaCollection || mangaCollection.length === 0) {
+        console.log("[PAGESHOW] Returning or restoring view. Dynamic index feed sync active.");
+        loadMangaCollection();
+      }
+    });
+  </script>
+</body>
+</html>

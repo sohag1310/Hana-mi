@@ -1,1 +1,619 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#f8f9fa] text-slate-850">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Hanami HoHo Reader</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;750;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    }
+    
+    .glassy {
+      background: rgba(13, 14, 18, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#f8f9fa] text-slate-800 antialiased font-sans flex flex-col selection:bg-rose-500 selection:text-white">
 
+  <!-- ==================== STAGE 1: MANGA OVERVIEW HUB ==================== -->
+  <div id="overview-hub" class="flex-1 w-full flex flex-col bg-[#f8f9fa]">
+    <!-- Top Minimalist Header -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-40 px-4 py-3.5 sm:px-6 shadow-sm">
+      <div class="max-w-6xl mx-auto flex items-center justify-between">
+        <a href="/" class="group flex items-center gap-1.5 text-xs font-bold tracking-wide text-slate-500 hover:text-slate-900 transition duration-200">
+          <svg class="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Back to Library
+        </a>
+        <div class="flex items-center gap-2">
+          <div class="h-1.5 w-1.5 rounded-full bg-[#00d26a]"></div>
+          <span class="text-[9px] font-mono tracking-widest uppercase text-slate-400 font-bold">Manga Portal</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      
+      <!-- Middle Poster and Manga Specs Info Column -->
+      <section class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-8 items-start mb-8">
+        
+        <!-- Left: Poster Preview with crisp corners and slate outline edge -->
+        <div class="w-full sm:w-48 aspect-[2/3] shrink-0 mx-auto md:mx-0">
+          <div class="overflow-hidden h-full rounded-xl bg-slate-100 border border-slate-200 shadow-md">
+            <% if (pages && pages.length > 0) { %>
+              <img 
+                src="<%= pages[0].url %>" 
+                alt="<%= title %> Cover" 
+                class="w-full h-full object-cover"
+              />
+            <% } else { %>
+              <div class="w-full h-full flex items-center justify-center text-slate-400 font-mono text-xs">No Preview</div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Right: Meta fields, Titles, description and CTA -->
+        <div class="flex-1 flex flex-col justify-center text-left">
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-[#111111] leading-tight tracking-tight font-sans">
+            <%= title %>
+          </h1>
+          
+          <!-- Elegant Pill-shaped Category and Tags aligned cleanly underneath main title -->
+          <div class="mt-4 flex flex-wrap gap-2 items-center">
+            <span class="rounded-full bg-rose-50 border border-rose-200/60 text-rose-600 text-[11px] px-3 py-1 font-bold">
+              <%
+                const cleanCategory = (function(cat) {
+                  if (!cat) return "Manga";
+                  const lower = cat.toLowerCase();
+                  if (lower.includes("hentai") || lower.includes("fox") || lower.includes("doujin") || lower.includes("nexus") || lower.includes("scraped") || lower.includes("local") || lower.includes("gallery") || lower.includes("download") || lower.includes(".") || lower.includes("/")) {
+                    return "Manga";
+                  }
+                  return cat;
+                })(category);
+              %>
+              <%= cleanCategory %>
+            </span>
+            <% if (tags && tags.length > 0) { %>
+              <% tags.forEach(tag => { %>
+                <span class="rounded-full bg-slate-100 text-slate-600 text-xs px-3 py-1 border border-slate-200 hover:text-rose-600 hover:bg-slate-50 transition cursor-pointer">
+                  #<%= tag %>
+                </span>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <!-- Quality Row descriptors -->
+          <div class="flex flex-wrap items-center gap-3 mt-4 text-xs font-semibold text-slate-500">
+            <span class="text-amber-500 font-bold bg-amber-50 border border-amber-200 py-0.5 px-2.5 rounded-full flex items-center gap-1">⭐ 4.8</span>
+            <span>•</span>
+            <span>Edition: <span class="text-slate-800 font-bold">Premium Edition</span></span>
+            <span>•</span>
+            <span>Just Scraped Live</span>
+          </div>
+
+          <p class="text-slate-550 text-xs sm:text-sm leading-relaxed mt-5 font-sans max-w-xl font-medium">
+            Experience this custom-curated digital release in pristine, masterfully scaled high-definition resolution. Clean layouts, seamless reading directions, and full browser buffering render this comic masterpiece in elite stand-alone display quality.
+          </p>
+
+          <!-- Reading CTA action section with premium Open Book SVG -->
+          <div class="mt-8 flex flex-wrap items-center gap-4">
+            <button 
+              onclick="startReaderAt(0)"
+              class="bg-[#00d26a] hover:bg-[#00b95c] text-white font-extrabold text-xs uppercase tracking-wider px-6 h-12 rounded-xl flex items-center justify-center gap-2.5 transition duration-200 shadow-sm hover:shadow active:scale-98"
+            >
+              <!-- Sleek outline open book SVG icon -->
+              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              START READING
+            </button>
+            
+            <!-- Chapter selections dropdown with matching container styling -->
+            <div class="relative">
+              <select 
+                onchange="window.location.href='/manga/<%= mangaId %>?p=' + this.value"
+                class="bg-white border border-slate-200 hover:border-slate-300 text-slate-800 text-xs font-bold px-4 h-12 rounded-xl outline-none cursor-pointer pr-10 appearance-none focus:border-[#00d26a] shadow-sm min-w-[150px]"
+              >
+                <% chapters.forEach((ch, idx) => { %>
+                  <option value="<%= idx %>" <%= idx === currentChapterIndex ? 'selected' : '' %>>
+                    Chapter <%= ch.chapter %>
+                  </option>
+                <% }); %>
+              </select>
+              <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Layout Section: Minimalist Chapter list rows -->
+      <section class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm mb-8">
+        <div class="flex items-center gap-2 mb-6 pb-2 border-b border-slate-100">
+          <span class="h-2 w-2 rounded-full bg-[#00d26a]"></span>
+          <h3 class="text-xs uppercase font-extrabold text-[#111111] tracking-widest font-sans">Chapter Release List</h3>
+        </div>
+        
+        <div class="space-y-2">
+          <% chapters.forEach((ch, idx) => { %>
+            <div 
+              onclick="startReaderAt(0)" 
+              class="flex items-center justify-between py-3 px-4 border-b border-slate-100 hover:bg-slate-50 transition rounded-lg text-slate-800 font-medium text-sm cursor-pointer"
+            >
+              <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+                <span class="text-slate-900 font-bold">Chapter <%= ch.chapter %></span>
+                <% if (ch.title && ch.title !== "Chapter " + ch.chapter) { %>
+                  <span class="text-slate-500 font-normal hidden sm:inline">- <%= ch.title %></span>
+                <% } %>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-semibold mr-2"><%= pages.length %> pages</span>
+                <span class="bg-[#00d26a]/10 text-[#00b95c] font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Free</span>
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+
+      <!-- Bottom Layout Section: Gallery chapter preview grids -->
+      <section class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm mb-8">
+        <div class="flex items-center gap-2 mb-6 pb-2 border-b border-slate-100">
+          <span class="h-2 w-2 rounded-full bg-[#00d26a]"></span>
+          <h3 class="text-xs uppercase font-extrabold text-[#111111] tracking-widest font-sans">Page Thumbnails Grid</h3>
+        </div>
+        
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+          <% pages.forEach((page, i) => { %>
+            <button 
+              onclick="startReaderAt(<%= i %>)" 
+              class="group relative aspect-[2/3] bg-slate-50 rounded-lg overflow-hidden border border-slate-200 hover:border-[#00d26a] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-sm text-left"
+            >
+              <img 
+                src="<%= page.url %>" 
+                class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-300" 
+                loading="lazy" 
+              />
+              <div class="absolute inset-x-0 bottom-0 bg-white/95 border-t border-slate-100 py-1 text-center text-[9px] font-mono font-bold text-slate-500 group-hover:text-white transition group-hover:bg-[#00d26a] group-hover:border-transparent">
+                Page <%= page.index %>
+              </div>
+            </button>
+          <% }) %>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer of the overview list -->
+    <footer class="border-t border-slate-200/80 bg-white py-12 mt-12 text-center text-xs text-slate-450 select-none">
+      <p>© 2026 Hanami HoHo. Premium curations in master-grade display quality.</p>
+    </footer>
+  </div>
+
+
+  <!-- ==================== STAGE 2: IMMERSIVE LIGHTBOX READER MODE ==================== -->
+  <div id="lightbox-reader" class="hidden flex-1 w-full bg-[#f8f9fa] flex flex-col relative text-slate-800">
+    
+    <!-- Premium Solid White Sticky Header Bar -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 inset-x-0 z-50 shadow-sm px-4 py-3 sm:px-6">
+      <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+        
+        <!-- Back to Home Button -->
+        <a 
+          href="/"
+          class="flex items-center gap-1.5 text-xs font-bold tracking-wide text-slate-500 hover:text-slate-900 transition duration-200 py-1.5"
+        >
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Back to Home
+        </a>
+
+        <!-- Manga Title & Chapter Label -->
+        <h3 class="hidden md:block text-xs font-extrabold text-slate-800 truncate max-w-sm" title="<%= title %>">
+          <%= title %> • Ch. <%= chapters[currentChapterIndex]?.chapter || '1' %>
+        </h3>
+
+        <!-- Interactive Switching Buttons inside Header Layout -->
+        <div class="flex items-center gap-2">
+          <!-- Overview Hub Button -->
+          <button 
+            onclick="closeLightboxReader()"
+            class="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold uppercase tracking-wider px-3.5 h-8.5 rounded-lg transition shadow-sm cursor-pointer shrink-0"
+          >
+            Overview Hub
+          </button>
+
+          <!-- Scroll vs Page Mode Switcher -->
+          <div class="flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5 shadow-sm shrink-0">
+            <button 
+              id="mode-scroll-btn"
+              onclick="setReaderMode('scroll')"
+              class="px-3.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer"
+            >
+              Scroll
+            </button>
+            <button 
+              id="mode-paginated-btn"
+              onclick="setReaderMode('paginated')"
+              class="px-3.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer"
+            >
+              Page Mode
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Top floating Page Progress bar (Only for paginated view) -->
+    <div id="paginated-progress-bar" class="fixed top-[52px] left-0 h-0.5 bg-[#00d26a] transition-all duration-350 z-50 w-0"></div>
+
+    <!-- Active view contents with safe spacing padding and zero outer margin layout constraints -->
+    <main class="flex-1 w-full flex flex-col items-center pt-8 pb-28">
+      
+      <!-- 1. SCROLL MODE CONTAINER (Zero layout gaps, centered) -->
+      <div id="scroll-container" class="space-y-0 flex flex-col items-center w-full max-w-3xl mx-auto bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+        <% pages.forEach((page) => { %>
+          <div class="w-full relative scroll-manga-page bg-white">
+            <div class="absolute top-4 right-4 z-10 bg-black/70 backdrop-blur-md text-white font-mono text-[9px] px-2.5 py-1 rounded-full select-none font-bold tracking-wider">
+              PAGE <%= page.index %> / <%= pages.length %>
+            </div>
+            <img 
+              src="<%= page.url %>" 
+              alt="Page <%= page.index %>" 
+              class="w-full h-auto block select-none"
+              loading="lazy"
+            />
+          </div>
+        <% }); %>
+      </div>
+
+      <!-- 2. PAGINATED SINGLE IMAGE CONTAINER -->
+      <div id="paginated-container" class="hidden w-full max-w-3xl px-4 mx-auto relative group">
+        <div class="relative bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md p-1.5">
+          <div class="absolute top-4 right-4 z-10 bg-black/70 backdrop-blur-md text-white font-mono text-[9px] px-3 py-1 rounded-full select-none font-bold tracking-wider">
+            PAGE <span id="paginated-overlay-current">1</span> / <span id="paginated-overlay-total">1</span>
+          </div>
+          
+          <img 
+            id="paginated-image"
+            src="" 
+            alt="Manga Page" 
+            class="w-full h-auto object-contain max-h-[80vh] select-none mx-auto cursor-pointer rounded-xl bg-[#fafafa]"
+          />
+        </div>
+
+        <div class="mt-4 flex items-center justify-between text-[10px] font-mono text-slate-500 px-3 select-none font-bold">
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+            Left Zone = Prior Page
+          </span>
+          <span class="flex items-center gap-1">
+            Right Zone = Next Page
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+          </span>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ==================== STAGE 3: PREMIUM STICKY NAVIGATION FOOTER (White Theme) ==================== -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-md bg-white border border-slate-200/85 rounded-2xl py-2 px-3 shadow-lg flex items-center justify-between gap-4 font-sans text-slate-800">
+      
+      <!-- Prev Chapter or Prev Page button -->
+      <button 
+        id="prev-nav-btn"
+        onclick="handleNavBack()"
+        class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold uppercase tracking-wide transition duration-150 flex items-center gap-1 cursor-pointer"
+        title="Go to prior element"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Back
+      </button>
+
+      <!-- Center Dynamic Page / Position Tracker -->
+      <div class="text-center">
+        <span class="text-[9px] font-mono uppercase tracking-widest text-slate-400 block font-bold">Progress</span>
+        <span class="text-xs font-bold font-sans text-slate-800">
+          Page <span id="sticky-page-current" class="text-[#00d26a]">1</span> of <span id="sticky-page-total">1</span>
+        </span>
+      </div>
+
+      <!-- Next Chapter or Next Page button -->
+      <button 
+        id="next-nav-btn"
+        onclick="handleNavForward()"
+        class="h-9 px-4 rounded-xl bg-[#00d26a] hover:bg-[#00b95c] text-white font-bold text-[11px] uppercase tracking-wide transition duration-150 flex items-center gap-1 cursor-pointer shadow-sm active:scale-98"
+        title="Go to next element"
+      >
+        Next
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Smooth floating scroll to top arrow button (bottom-right edge offset) -->
+    <button 
+      id="scroll-to-top-btn"
+      onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+      class="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-[#00d26a] hover:bg-[#00b95c] text-white shadow-md border border-[#00d26a]/20 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none cursor-pointer"
+      title="Scroll to Top"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path>
+      </svg>
+    </button>
+
+  </div>
+
+
+  <!-- Client-Side State Controller script -->
+  <script>
+    // Server-injected page assets list array
+    const pageList = <%- JSON.stringify(pages) %>;
+    const mangaId = "<%= mangaId %>";
+    const currentChapterIndex = parseInt("<%= currentChapterIndex %>", 10);
+    const totalChapters = parseInt("<%= chapters.length %>", 10);
+
+    let activePageIndex = 0; // 0-indexed
+    let readerMode = localStorage.getItem("hanami_reader_mode") || "scroll";
+    let lightboxActive = false;
+
+    // Toggle Multi-Stage View flow
+    function startReaderAt(pageIndex) {
+      activePageIndex = pageIndex;
+      lightboxActive = true;
+
+      // Swap stages
+      document.getElementById("overview-hub").classList.add("hidden");
+      document.getElementById("lightbox-reader").classList.remove("hidden");
+
+      // Toggle page backgrounds to premium solid white modes
+      document.documentElement.className = "bg-[#f8f9fa] text-slate-900";
+      document.body.className = "min-h-screen bg-[#f8f9fa] text-slate-900 antialiased font-sans flex flex-col selection:bg-rose-500 selection:text-white";
+
+      // Initial layouts setups
+      updateModeUI();
+
+      // Scroll perfectly to specified element context or top
+      if (readerMode === "scroll") {
+        const pages = document.querySelectorAll(".scroll-manga-page");
+        if (pages[pageIndex]) {
+          setTimeout(() => {
+            pages[pageIndex].scrollIntoView({ behavior: "smooth" });
+          }, 150);
+        }
+      } else {
+        renderActivePage();
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+    }
+
+    function closeLightboxReader() {
+      lightboxActive = false;
+      document.getElementById("lightbox-reader").classList.add("hidden");
+      document.getElementById("overview-hub").classList.remove("hidden");
+
+      // Toggle page backgrounds back to crisp light/white modes
+      document.documentElement.className = "bg-[#f8f9fa] text-slate-850";
+      document.body.className = "min-h-screen bg-[#f8f9fa] text-slate-800 antialiased font-sans flex flex-col selection:bg-rose-500 selection:text-white";
+
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    // Show/hide scroll to top button
+    window.addEventListener("scroll", function() {
+      const btn = document.getElementById("scroll-to-top-btn");
+      if (window.scrollY > 400 && lightboxActive) {
+        btn.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+        btn.classList.add("translate-y-0", "opacity-100");
+      } else {
+        btn.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+        btn.classList.remove("translate-y-0", "opacity-100");
+      }
+
+      // Live Intersection-Observer-like logic to trace active page during vertical scroll mode
+      if (readerMode === "scroll" && lightboxActive) {
+        const pageElements = document.querySelectorAll(".scroll-manga-page");
+        let activeIdx = 0;
+        let minDistance = Infinity;
+        pageElements.forEach((page, index) => {
+          const rect = page.getBoundingClientRect();
+          const distance = Math.abs(rect.top - 80); // Offset by top header
+          if (distance < minDistance) {
+            minDistance = distance;
+            activeIdx = index;
+          }
+        });
+        activePageIndex = activeIdx;
+        updateStickyTracker();
+      }
+    });
+
+    function updateModeUI() {
+      const scrollBtn = document.getElementById("mode-scroll-btn");
+      const paginatedBtn = document.getElementById("mode-paginated-btn");
+      
+      const scrollContainer = document.getElementById("scroll-container");
+      const paginatedContainer = document.getElementById("paginated-container");
+      const pagProgressBar = document.getElementById("paginated-progress-bar");
+
+      if (readerMode === "scroll") {
+        // Active scroll selectors inside white header layout (clean, minimal dark buttons)
+        scrollBtn.className = "bg-slate-900 text-white px-3.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition duration-200 cursor-pointer";
+        paginatedBtn.className = "text-slate-500 hover:text-slate-900 px-3.5 py-1 text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer";
+        
+        scrollContainer.style.display = "flex";
+        paginatedContainer.style.display = "none";
+        pagProgressBar.style.width = "0%";
+      } else {
+        // Active paginated selectors inside white header layout (clean, minimal dark buttons)
+        scrollBtn.className = "text-slate-500 hover:text-slate-900 px-3.5 py-1 text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer";
+        paginatedBtn.className = "bg-slate-900 text-white px-3.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition duration-200 cursor-pointer";
+        
+        scrollContainer.style.display = "none";
+        paginatedContainer.style.display = "block";
+        
+        renderActivePage();
+      }
+      updateStickyTracker();
+    }
+
+    function setReaderMode(mode) {
+      readerMode = mode;
+      localStorage.setItem("hanami_reader_mode", mode);
+      updateModeUI();
+      // Scroll to top immediately to keep user oriented
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+
+    function updateStickyTracker() {
+      document.getElementById("sticky-page-current").innerText = activePageIndex + 1;
+      document.getElementById("sticky-page-total").innerText = pageList.length;
+
+      // Update progress bar width if paginated
+      if (readerMode === "paginated") {
+        const pct = ((activePageIndex + 1) / pageList.length) * 100;
+        document.getElementById("paginated-progress-bar").style.width = pct + "%";
+      }
+    }
+
+    // Function to render active image under paginated single flip view
+    function renderActivePage() {
+      if (pageList.length === 0) return;
+      if (activePageIndex < 0) activePageIndex = 0;
+      if (activePageIndex >= pageList.length) activePageIndex = pageList.length - 1;
+
+      const pageObj = pageList[activePageIndex];
+      const imgElem = document.getElementById("paginated-image");
+      
+      // Update primary image source
+      imgElem.src = pageObj.url;
+
+      // Update overlay labels
+      document.getElementById("paginated-overlay-current").innerText = activePageIndex + 1;
+      document.getElementById("paginated-overlay-total").innerText = pageList.length;
+
+      updateStickyTracker();
+    }
+
+    // STICKY BAR ACTIONS
+    function handleNavBack() {
+      if (readerMode === "paginated") {
+        prevPage();
+      } else {
+        // In scroll mode, back scrolling or chapter change
+        if (activePageIndex > 0) {
+          activePageIndex--;
+          const pageElements = document.querySelectorAll(".scroll-manga-page");
+          if (pageElements[activePageIndex]) {
+            pageElements[activePageIndex].scrollIntoView({ behavior: "smooth" });
+          }
+        } else {
+          // Go to previous chapter if available
+          if (currentChapterIndex > 0) {
+            window.location.href = `/manga/${mangaId}?p=${currentChapterIndex - 1}`;
+          } else {
+            alert("This is the absolute first page of the chapter.");
+          }
+        }
+      }
+    }
+
+    function handleNavForward() {
+      if (readerMode === "paginated") {
+        nextPage();
+      } else {
+        if (activePageIndex < pageList.length - 1) {
+          activePageIndex++;
+          const pageElements = document.querySelectorAll(".scroll-manga-page");
+          if (pageElements[activePageIndex]) {
+            pageElements[activePageIndex].scrollIntoView({ behavior: "smooth" });
+          }
+        } else {
+          // Go to next chapter if available
+          if (currentChapterIndex < totalChapters - 1) {
+            window.location.href = `/manga/${mangaId}?p=${currentChapterIndex + 1}`;
+          } else {
+            alert("Outstanding! You have reached the end of this wonderful curation.");
+          }
+        }
+      }
+    }
+
+    function prevPage() {
+      if (activePageIndex > 0) {
+        activePageIndex--;
+        renderActivePage();
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        if (currentChapterIndex > 0) {
+          window.location.href = `/manga/${mangaId}?p=${currentChapterIndex - 1}`;
+        }
+      }
+    }
+
+    function nextPage() {
+      if (activePageIndex < pageList.length - 1) {
+        activePageIndex++;
+        renderActivePage();
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        if (currentChapterIndex < totalChapters - 1) {
+          window.location.href = `/manga/${mangaId}?p=${currentChapterIndex + 1}`;
+        } else {
+          alert("Outstanding! You have reached the end of this wonderful curation.");
+        }
+      }
+    }
+
+    // Support clicking left-half of image area for previous page, and right-half for next page
+    document.getElementById("paginated-image").addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = e.target.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.right - rect.left;
+      
+      if (clickX < width * 0.4) {
+        prevPage();
+      } else {
+        nextPage();
+      }
+    });
+
+    // Capture Left & Right arrow keyboard keys for intuitive desktop navigating
+    document.addEventListener("keydown", function(e) {
+      if (!lightboxActive) return;
+      if (e.key === "ArrowLeft") {
+        handleNavBack();
+      } else if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        handleNavForward();
+      } else if (e.key === "Escape") {
+        closeLightboxReader();
+      }
+    });
+
+  </script>
+</body>
+</html>
